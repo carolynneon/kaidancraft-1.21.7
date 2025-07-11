@@ -37,6 +37,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -66,17 +68,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     public static final int BURN_TIME_PROPERTY_INDEX = 0;
     public static final int FUEL_TIME_PROPERTY_INDEX = 1;
-
-//    private final AP1Part[] parts;
-//    public final AP1Part frame_left1;
-//    public final AP1Part frame_left2;
-//    public final AP1Part frame_left3;
-//    public final AP1Part frame_left4;
-//    public final AP1Part frame_right1;
-//    public final AP1Part frame_right2;
-//    public final AP1Part frame_right3;
-//    public final AP1Part frame_right4;
-//    public final AP1Part frame_top;
 
     private float mudFlapsPhase;
     private float rightSeatAngle;
@@ -139,17 +130,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     public AP1Entity(EntityType<?> entityType, World world) {
         super(entityType, world);
-//        this.frame_left1 = new AP1Part(this, "frame_left1", 0.5F, 2.375F);
-//        this.frame_left2 = new AP1Part(this, "frame_left2", 0.5F, 2.375F);
-//        this.frame_left3 = new AP1Part(this, "frame_left3", 0.5F, 2.375F);
-//        this.frame_left4 = new AP1Part(this, "frame_left4", 0.5F, 2.375F);
-//        this.frame_right1 = new AP1Part(this, "frame_right1", 0.5F, 2.375F);
-//        this.frame_right2 = new AP1Part(this, "frame_right2", 0.5F, 2.375F);
-//        this.frame_right3 = new AP1Part(this, "frame_right3", 0.5F, 2.375F);
-//        this.frame_right4 = new AP1Part(this, "frame_right4", 0.5F, 2.375F);
-//        this.frame_top = new AP1Part(this, "frame_top", 0.8F, 0.125F);
-//        this.parts = new AP1Part[]{this.frame_left1, this.frame_left2, this.frame_left3, this.frame_left4,
-//        this.frame_right1, this.frame_right2, this.frame_right3, this.frame_right4, this.frame_top};
         this.intersectionChecked = true;
     }
 
@@ -188,17 +168,27 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
     }
 
     public static boolean canCollide(Entity entity, Entity other) {
-        return (other.isCollidable() || other.isPushable()) && !entity.isConnectedThroughVehicle(other);
+        return (other.isCollidable(entity) || other.isPushable()) && !entity.isConnectedThroughVehicle(other);
     }
 
     @Override
-    public boolean isCollidable() {
+    public boolean isCollidable(@Nullable Entity entity) {
         return false;
     }
 
     @Override
     public boolean isPushable() {
         return true;
+    }
+
+    @Override
+    protected void readCustomData(ReadView view) {
+        this.readInventoryFromData(view);
+    }
+
+    @Override
+    protected void writeCustomData(WriteView view) {
+        this.writeInventoryToData(view);
     }
 
     @Override
@@ -309,10 +299,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
         this.setDamageWobbleStrength(this.getDamageWobbleStrength() * 11.0F);
     }
 
-//    public AP1Part[] getParts() {
-//        return this.parts;
-//    }
-
     @Override
     public boolean canHit() {
         return !this.isRemoved();
@@ -366,15 +352,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
             }
 
             this.move(MovementType.SELF, this.getVelocity());
-//            this.movePart(this.frame_left1, -1.25, 0.0, 0.575);
-//            this.movePart(this.frame_left2, -0.42, 0.0, 0.575);
-//            this.movePart(this.frame_left3, 0.42, 0.0, 0.575);
-//            this.movePart(this.frame_left4, 1.25, 0.0, 0.575);
-//            this.movePart(this.frame_right1, -1.25, 0.0, -0.575);
-//            this.movePart(this.frame_right2, -0.42, 0.0, -0.575);
-//            this.movePart(this.frame_right3, 0.42, 0.0, -0.575);
-//            this.movePart(this.frame_right4, 1.25, 0.0, -0.575);
-//            this.movePart(this.frame_top, 0.0, 2.25, 0.0);
         } else {
             this.setVelocity(Vec3d.ZERO);
         }
@@ -410,11 +387,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
             Vec3d smokePos = new Vec3d(this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
             this.getWorld().addParticleClient(ParticleTypes.LARGE_SMOKE, smokePos.x, smokePos.y, smokePos.z, 0.0, 0.0, 0.0);
         }
-    }
-
-    private void movePart(AP1Part ap1Part, double dx, double dy, double dz) {
-        Vec3d newPos = new Vec3d(this.getX() + dx, this.getY() + dy, this.getZ() + dz).rotateY(-this.getYaw() * (float) (Math.PI / 180.0));
-        ap1Part.setPosition(newPos);
     }
 
     protected SoundEvent getEngineSound() {
@@ -680,7 +652,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
             }
 
             Vec3d vec3d = new Vec3d(this.getVelocity().x * f,this.getVelocity().y + d, this.getVelocity().z * f);
-            //vec3d = this.adjustMovementForCollisions(vec3d);
             this.setVelocity(vec3d);
             this.yawVelocity *= f;
             if (e > 0.0) {
@@ -690,102 +661,10 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
         }
     }
 
-//    private Vec3d adjustMovementForCollisions(Vec3d movement) {
-//        Box box = this.getBoundingBox();
-//        List<VoxelShape> list = this.getWorld().getEntityCollisions(this, box.stretch(movement));
-//        Vec3d vec3d = movement.lengthSquared() == 0.0 ? movement : adjustMovementForCollisions(this, movement, box, this.getWorld(), list);
-//        boolean bl = movement.x != vec3d.x;
-//        boolean bl2 = movement.y != vec3d.y;
-//        boolean bl3 = movement.z != vec3d.z;
-//        boolean bl4 = bl2 && movement.y < 0.0;
-//        if (this.getStepHeight() > 0.0F && (bl4 || this.isOnGround()) && (bl || bl3)) {
-//            Box box2 = bl4 ? box.offset(0.0, vec3d.y, 0.0) : box;
-//            Box box3 = box2.stretch(movement.x, this.getStepHeight(), movement.z);
-//            if (!bl4) {
-//                box3 = box3.stretch(0.0, -1.0E-5F, 0.0);
-//            }
-//
-//            List<VoxelShape> list2 = findCollisionsForMovement(this, this.getWorld(), list, box3);
-//            float f = (float)vec3d.y;
-//            float[] fs = collectStepHeights(box2, list2, this.getStepHeight(), f);
-//
-//            for (float g : fs) {
-//                Vec3d vec3d2 = adjustMovementForCollisions(new Vec3d(movement.x, g, movement.z), box2, list2);
-//                if (vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
-//                    double d = box.minY - box2.minY;
-//                    return vec3d2.subtract(0.0, d, 0.0);
-//                }
-//            }
-//        }
-//
-//        return vec3d;
-//    }
-//
-//    private static float[] collectStepHeights(Box collisionBox, List<VoxelShape> collisions, float f, float stepHeight) {
-//        FloatSet floatSet = new FloatArraySet(4);
-//
-//        for (VoxelShape voxelShape : collisions) {
-//            for (double d : voxelShape.getPointPositions(Direction.Axis.Y)) {
-//                float g = (float)(d - collisionBox.minY);
-//                if (!(g < 0.0F) && g != stepHeight) {
-//                    if (g > f) {
-//                        break;
-//                    }
-//
-//                    floatSet.add(g);
-//                }
-//            }
-//        }
-//
-//        float[] fs = floatSet.toFloatArray();
-//        FloatArrays.unstableSort(fs);
-//        return fs;
-//    }
-//
-//    private static List<VoxelShape> findCollisionsForMovement(
-//            @Nullable Entity entity, World world, List<VoxelShape> regularCollisions, Box movingEntityBoundingBox
-//    ) {
-//        ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(regularCollisions.size() + 1);
-//        if (!regularCollisions.isEmpty()) {
-//            builder.addAll(regularCollisions);
-//        }
-//
-//        WorldBorder worldBorder = world.getWorldBorder();
-//        boolean bl = entity != null && worldBorder.canCollide(entity, movingEntityBoundingBox);
-//        if (bl) {
-//            builder.add(worldBorder.asVoxelShape());
-//        }
-//
-//        builder.addAll(world.getBlockCollisions(entity, movingEntityBoundingBox));
-//        return builder.build();
-//    }
-//
-//    private static Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, List<VoxelShape> collisions) {
-//        if (collisions.isEmpty()) {
-//            return movement;
-//        } else {
-//            Vec3d vec3d = Vec3d.ZERO;
-//
-//            for (Direction.Axis axis : getAxisCheckOrder(movement)) {
-//                double d = movement.getComponentAlongAxis(axis);
-//                if (d != 0.0) {
-//                    double e = VoxelShapes.calculateMaxOffset(axis, entityBoundingBox.offset(vec3d), collisions, d);
-//                    vec3d = vec3d.withAxis(axis, e);
-//                }
-//            }
-//
-//            return vec3d;
-//        }
-//    }
-
     @Override
     public boolean isOnGround() {
         return nearbySlipperiness > 0.0F;
     }
-
-//    private static Iterable<Direction.Axis> getAxisCheckOrder(Vec3d movement) {
-//        return Math.abs(movement.x) < Math.abs(movement.z) ? Z_THEN_X : X_THEN_Z;
-//    }
 
     @Override
     public float getStepHeight() {
@@ -956,17 +835,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
     @Override
     public void onPassengerLookAround(Entity passenger) {
         this.clampPassengerYaw(passenger);
-    }
-
-
-    @Override
-    protected void readCustomDataFromNbt(NbtCompound nbt) {
-        this.readInventoryFromNbt(nbt, this.getRegistryManager());
-    }
-
-    @Override
-    protected void writeCustomDataToNbt(NbtCompound nbt) {
-        this.writeInventoryToNbt(nbt, this.getRegistryManager());
     }
 
     @Override
