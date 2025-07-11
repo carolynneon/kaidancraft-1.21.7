@@ -1,0 +1,11 @@
+// 1.21.5	-999999999-01-01T00:00:00	KaidanCraft/KaidanCraftRecipeProvider
+daf5f8799ee1504b78c4203e6f4af7c6bc0fb72d data/kaidancraft/advancement/recipes/food/onigiri.json
+8f6aab1aca3176e2b527211325bd25f7d22286db data/kaidancraft/advancement/recipes/misc/iron_nugget_from_blasting_bolt.json
+0ee291c072e672aefc73129ea538104dc0af3a96 data/kaidancraft/advancement/recipes/misc/iron_nugget_from_smelting_bolt.json
+feb8a92fec756998fe25366c8083d3032a8221e5 data/kaidancraft/advancement/recipes/tools/bolt.json
+c68231e1e256f7aa65764a181fc3b514f11e4166 data/kaidancraft/advancement/recipes/transportation/ap1.json
+8bc8e81ab980b3b525b339efd6dad70d6ca93939 data/kaidancraft/recipe/ap1.json
+c457245bf59175b94841f14b0e8a543de408f790 data/kaidancraft/recipe/bolt.json
+27471e411eec50bb3ada5e2010b8be11e30718ef data/kaidancraft/recipe/iron_nugget_from_blasting_bolt.json
+a7dbc773fb612166db676f896479d3e0fce5b92b data/kaidancraft/recipe/iron_nugget_from_smelting_bolt.json
+70dbcb78faf53284f0880ac0db4f063733c56e72 data/kaidancraft/recipe/onigiri.json

@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "kaidancraft",
+	"version": "${version}",
+	"name": "KaidanCraft",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/kaidancraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"carolynneon.kaidancraft.KaidanCraft"
+		],
+		"client": [
+			"carolynneon.kaidancraft.KaidanCraftClient"
+		],
+		"fabric-datagen": [
+			"carolynneon.kaidancraft.datagen.KaidanCraftDataGenerator"
+		]
+	},
+	"mixins": [
+		"kaidancraft.mixins.json",
+		{
+			"config": "kaidancraft.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21.5",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

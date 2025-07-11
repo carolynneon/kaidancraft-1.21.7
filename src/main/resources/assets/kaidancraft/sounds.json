@@ -1,0 +1,8 @@
+{
+  "entity_ap1_engine": {
+    "subtitle": "sounds.kaidancraft.entity_ap1_engine",
+    "sounds": [
+      "kaidancraft:entity_ap1_engine"
+    ]
+  }
+}

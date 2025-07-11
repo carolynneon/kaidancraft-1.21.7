@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": "minecraft:wheat",
+    "D": "minecraft:dried_kelp"
+  },
+  "pattern": [
+    " # ",
+    "#D#"
+  ],
+  "result": {
+    "count": 1,
+    "id": "kaidancraft:onigiri"
+  }
+}
