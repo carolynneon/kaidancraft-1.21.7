@@ -1,15 +1,19 @@
 package carolynneon.kaidancraft.entity.vehicle;
 
-import carolynneon.kaidancraft.registry.RegisterEntityTypes;
-import carolynneon.kaidancraft.screenhandler.AP1MenuScreenHandler;
 import carolynneon.kaidancraft.KaidanCraft;
+import carolynneon.kaidancraft.network.payload.AP1UpdateFuelPayload;
 import carolynneon.kaidancraft.network.payload.EntityIDPayload;
+import carolynneon.kaidancraft.registry.RegisterEntityTypes;
 import carolynneon.kaidancraft.registry.RegisterItems;
 import carolynneon.kaidancraft.registry.RegisterSounds;
+import carolynneon.kaidancraft.screenhandler.AP1MenuScreenHandler;
 import com.google.common.collect.Lists;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.LilyPadBlock;
+import net.minecraft.block.PlantBlock;
 import net.minecraft.entity.*;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -26,7 +30,6 @@ import net.minecraft.item.FuelRegistry;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTable;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.RegistryKey;
@@ -54,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFactory<EntityIDPayload>, VehicleInventory {
+public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFactory<EntityIDPayload>, VehicleInventory, RideableInventory {
     public static final Text MENU_TITLE = Text.translatable("container." + KaidanCraft.MOD_ID + ".ap1_menu");
     private static final TrackedData<Boolean> MUD_FLAPS_MOVING = DataTracker.registerData(AP1Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> SITTING_RIGHT = DataTracker.registerData(AP1Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -164,7 +167,7 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     @Override
     public boolean collidesWith(Entity other) {
-        return canCollide(this, other);
+        return false;
     }
 
     public static boolean canCollide(Entity entity, Entity other) {
@@ -173,6 +176,13 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     @Override
     public boolean isCollidable(@Nullable Entity entity) {
+        if (entity != null) {
+            Vec3d pos = new Vec3d(this.getX(), 0, this.getZ());
+            double distX = pos.distanceTo(new Vec3d(entity.getX(), 0, this.getZ()));
+            double distZ = pos.distanceTo(new Vec3d(this.getX(), 0, entity.getZ()));
+            return entity.getBoundingBox().minY > this.getBoundingBox().maxY - 0.05 &&
+                    distX < 0.5 && distZ < 0.5;
+        }
         return false;
     }
 
@@ -183,11 +193,25 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     @Override
     protected void readCustomData(ReadView view) {
+        setMudFlapsMoving(view.getBoolean("MUD_FLAPS_MOVING", false));
+        setSittingRight(view.getBoolean("SITTING_RIGHT", false));
+        setSittingLeft(view.getBoolean("SITTING_LEFT", false));
+        setLeverRight(view.getInt("LEVER_RIGHT", 0));
+        setLeverLeft(view.getInt("LEVER_LEFT", 0));
+        setLitTimeRemaining(view.getInt("LIT_TIME_REMAINING", 0));
+        setLitTotalTime(view.getInt("LIT_TOTAL_TIME", 0));
         this.readInventoryFromData(view);
     }
 
     @Override
     protected void writeCustomData(WriteView view) {
+        view.putBoolean("MUD_FLAPS_MOVING", isMudFlapsMoving());
+        view.putBoolean("SITTING_RIGHT", isSittingRight());
+        view.putBoolean("SITTING_LEFT", isSittingLeft());
+        view.putInt("LEVER_RIGHT", getLeverRight());
+        view.putInt("LEVER_LEFT", getLeverLeft());
+        view.putInt("LIT_TIME_REMAINING", getLitTimeRemaining());
+        view.putInt("LIT_TOTAL_TIME", getLitTotalTime());
         this.writeInventoryToData(view);
     }
 
@@ -224,8 +248,8 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
             if (entity.getBoundingBox().minY < this.getBoundingBox().maxY) {
                 super.pushAwayFrom(entity);
             }
-        } else if (entity.getBoundingBox().minY <= this.getBoundingBox().maxY - 0.05) {
-            if (entity.getBoundingBox().minY < this.getBoundingBox().minY + 0.5 && entity.getBoundingBox().maxY > this.getBoundingBox().maxY - 0.125F) {
+        } else {// if (entity.getBoundingBox().minY <= this.getBoundingBox().maxY - 0.05) {
+            if (entity.getBoundingBox().minY < this.getBoundingBox().minY + 1.0 && entity.getBoundingBox().maxY > this.getBoundingBox().maxY - 0.125F) {
                 entity.setVelocity(entity.getVelocity().x, Math.min(entity.getVelocity().y, 0.0), entity.getVelocity().z);
             }
             double d = entity.getX() - this.getX();
@@ -255,10 +279,10 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
                     }
                 }
             }
-        } else {
-            entity.setVelocity(entity.getVelocity().x, 0.0, entity.getVelocity().z);
-            entity.onLanding();
-        }
+        } //else {
+//            entity.setVelocity(entity.getVelocity().x, 0.0, entity.getVelocity().z);
+//            entity.onLanding();
+//        }
     }
 
     private void pushAwayHelper(Entity entity, double thisMultiplier, double entityMultiplier) {
@@ -376,12 +400,17 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
             }
         }
 
-        if (this.getWorld().isClient) {
+        if (!this.getWorld().isClient) {
+            this.updateFuel();
+
+            AP1UpdateFuelPayload payload = new AP1UpdateFuelPayload(this.getId(), this.getLitTimeRemaining(), this.getLitTotalTime());
+            for (ServerPlayerEntity player : PlayerLookup.world((ServerWorld) this.getWorld())) {
+                ServerPlayNetworking.send(player, payload);
+            }
             if (!this.isSilent() && this.isBurning()) {
-                this.getWorld().playSoundClient(this.getX(), this.getY(), this.getZ(), this.getEngineSound(), this.getSoundCategory(), 0.4F, 1.0F, false);
+                this.getWorld().playSound(this, this.getX(), this.getY(), this.getZ(), this.getEngineSound(), this.getSoundCategory(), 0.4F, 1.0F);
             }
         }
-        this.updateFuel();
         if (this.getWorld().isClient && this.isBurning() && this.random.nextInt(8) == 0) {
             Vec3d offset = new Vec3d(-0.575, 0.8, 1.15).rotateY(-this.getYaw() * (float) (Math.PI / 180.0));
             Vec3d smokePos = new Vec3d(this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
@@ -436,7 +465,6 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
                 case 2 -> this.rightLeverAngle = MathHelper.clampedLerp(this.rightLeverAngle, 1.0F, tickProgress);
                 default -> this.rightLeverAngle = MathHelper.clampedLerp(this.rightLeverAngle, 0.5F, tickProgress);
             }
-            ;
         } else {
             this.rightLeverAngle = MathHelper.clampedLerp(this.rightLeverAngle, 0.0F, tickProgress);
         }
@@ -449,7 +477,7 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
                 case 1 -> this.leftLeverAngle = MathHelper.clampedLerp(this.leftLeverAngle, 0.0F, tickProgress);
                 case 2 -> this.leftLeverAngle = MathHelper.clampedLerp(this.leftLeverAngle, 1.0F, tickProgress);
                 default -> this.leftLeverAngle = MathHelper.clampedLerp(this.leftLeverAngle, 0.5F, tickProgress);
-            };
+            }
         } else {
             this.leftLeverAngle = MathHelper.clampedLerp(this.leftLeverAngle, 0.0F, tickProgress);
         }
@@ -458,6 +486,16 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     public void setLeverLeft(int value) {
         this.dataTracker.set(LEVER_LEFT, value);
+    }
+
+    public void setLitTimeRemaining(int value) {
+        this.litTimeRemaining = value;
+        this.dataTracker.set(LIT_TIME_REMAINING, value);
+    }
+
+    public void setLitTotalTime(int value) {
+        this.litTotalTime = value;
+        this.dataTracker.set(LIT_TOTAL_TIME, value);
     }
 
     private AP1Entity.Location checkLocation() {
@@ -799,7 +837,7 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
         BlockPos blockPos = BlockPos.ofFloored(passenger.getPos());
         BlockPos blockPos2 = blockPos.down();
         if (!this.getWorld().isWater(blockPos2)) {
-            List<Vec3d> list = Lists.<Vec3d>newArrayList();
+            List<Vec3d> list = Lists.newArrayList();
             double f = this.getWorld().getDismountHeight(blockPos);
             if (Dismounting.canDismountInBlock(f)) {
                 list.add(new Vec3d(d, blockPos.getY() + f, e));
@@ -843,7 +881,7 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
         if (actionResult != ActionResult.PASS) {
             return actionResult;
         } else {
-            if (getPassengerList().contains(player)) {
+            if (this.getPassengerList().contains(player)) {
                 return ActionResult.PASS;
             }
             if (player.isSneaking()) {
@@ -854,7 +892,7 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
                     return ActionResult.SUCCESS;
                 }
             }
-            return (ActionResult)(player.shouldCancelInteraction() || !(this.ticksUnderwater < 30.0F) || !this.getWorld().isClient && !player.startRiding(this)
+            return (player.shouldCancelInteraction() || !(this.ticksUnderwater < 30.0F) || !this.getWorld().isClient && !player.startRiding(this)
                     ? ActionResult.PASS
                     : ActionResult.SUCCESS);
         }
@@ -909,6 +947,14 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     public int getLeverLeft() {
         return this.getControllingPassenger() != null ? this.dataTracker.get(LEVER_LEFT) : 0;
+    }
+
+    public int getLitTimeRemaining() {
+        return this.dataTracker.get(LIT_TIME_REMAINING);
+    }
+
+    public int getLitTotalTime() {
+        return this.dataTracker.get(LIT_TOTAL_TIME);
     }
 
     @Override
@@ -1054,8 +1100,8 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
                 }
             }
         }
-        this.dataTracker.set(LIT_TIME_REMAINING, this.litTimeRemaining);
-        this.dataTracker.set(LIT_TOTAL_TIME, this.litTotalTime);
+        setLitTimeRemaining(this.litTimeRemaining);
+        setLitTotalTime(this.litTotalTime);
     }
 
     private boolean isBurning() {
@@ -1064,6 +1110,11 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 
     protected int getFuelTime(FuelRegistry fuelRegistry, ItemStack stack) {
         return fuelRegistry.getFuelTicks(stack);
+    }
+
+    @Override
+    public void openInventory(PlayerEntity player) {
+        this.open(player);
     }
 
 //    @Override
@@ -1076,11 +1127,11 @@ public class AP1Entity extends VehicleEntity implements ExtendedScreenHandlerFac
 //        }
 //    }
 
-    public static enum Location {
+    public enum Location {
         IN_WATER,
         UNDER_WATER,
         UNDER_FLOWING_WATER,
         ON_LAND,
-        IN_AIR;
+        IN_AIR
     }
 }

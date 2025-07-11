@@ -44,7 +44,7 @@ public class AP1EntityRenderer extends EntityRenderer<AP1Entity, AP1EntityRender
         matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - ap1EntityRenderState.yaw));
         float f = ap1EntityRenderState.damageWobbleTicks;
         if (f > 0.0F) {
-            matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(MathHelper.sin(f) * f * ap1EntityRenderState.damageWobbleStrength / 10.0F * (float)ap1EntityRenderState.damageWobbleSide));
+            matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(MathHelper.sin(f) * f * ap1EntityRenderState.damageWobbleStrength / 10.0F * (float)ap1EntityRenderState.damageWobbleSide));
         }
 
         matrixStack.scale(-1.0F, -1.0F, 1.0F);

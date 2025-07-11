@@ -1,13 +1,7 @@
 package carolynneon.kaidancraft;
 
-import carolynneon.kaidancraft.entity.vehicle.AP1Entity;
-import carolynneon.kaidancraft.network.payload.AP1RenderStatePayload;
 import carolynneon.kaidancraft.registry.*;
-import carolynneon.kaidancraft.registry.worldgen.RegisterBiomeModifications;
 import net.fabricmc.api.ModInitializer;
-
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +18,7 @@ public class KaidanCraft implements ModInitializer {
 		RegisterEntityTypes.load();
 		RegisterItemGroups.load();
 		RegisterItems.load();
-		//RegisterPayloadTypes.load();
+		RegisterPayloadTypes.load();
 		RegisterScreenHandlerTypes.load();
 		RegisterSounds.load();
 //		ServerPlayNetworking.registerGlobalReceiver(AP1RenderStatePayload.AP1_RENDER_STATE_ID, (payload, context) -> {
